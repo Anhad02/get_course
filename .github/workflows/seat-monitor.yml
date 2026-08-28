@@ -6,8 +6,10 @@ name: Course Seat Monitor
 
 on:
   schedule:
-    # Every 10 minutes. GitHub cron is UTC and may lag a few minutes under load.
-    - cron: "*/10 * * * *"
+    # Roughly every 10 minutes. Offset off the top-of-interval (:00,:10,...)
+    # because that mark is the most congested on GitHub's scheduler, which
+    # delays first/subsequent runs. GitHub cron is UTC and best-effort.
+    - cron: "4,14,24,34,44,54 * * * *"
   workflow_dispatch: {} # allows manual "Run workflow" from the Actions tab
 
 # Prevent overlapping runs if one check is slow.
