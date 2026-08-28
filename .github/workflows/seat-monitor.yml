@@ -1,0 +1,48 @@
+name: Course Seat Monitor
+
+# Runs a single seat check on a schedule and notifies via Twilio when a seat
+# opens. All configuration and credentials come from repository Secrets and
+# Variables so nothing sensitive is committed.
+
+on:
+  schedule:
+    # Every 10 minutes. GitHub cron is UTC and may lag a few minutes under load.
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {} # allows manual "Run workflow" from the Actions tab
+
+# Prevent overlapping runs if one check is slow.
+concurrency:
+  group: seat-monitor
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run seat check
+        env:
+          # Course config (repository Variables)
+          SUBJECT: ${{ vars.SUBJECT }}
+          COURSE_NUMBER: ${{ vars.COURSE_NUMBER }}
+          SECTION: ${{ vars.SECTION }}
+          LEVEL: ${{ vars.LEVEL }}
+          SESSION: ${{ vars.SESSION }}
+          NOTIFY_METHOD: ${{ vars.NOTIFY_METHOD }}
+          # Twilio credentials (repository Secrets)
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM_PHONE: ${{ secrets.TWILIO_FROM_PHONE }}
+          TO_PHONE: ${{ secrets.TO_PHONE }}
+        run: python monitor.py --once
